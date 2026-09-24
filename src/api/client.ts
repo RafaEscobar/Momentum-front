@@ -3,6 +3,7 @@ import type { AxiosRequestConfig } from 'axios'
 
 import { env } from '@/config/env'
 import { toApiError } from '@/api/errors'
+import { notifyUnauthorized } from '@/api/sessionEvents'
 
 export const AUTH_TOKEN_STORAGE_KEY = 'token'
 
@@ -31,6 +32,10 @@ api.interceptors.response.use(
   (error: unknown) => {
     if (axios.isCancel(error)) {
       return Promise.reject(error)
+    }
+
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      notifyUnauthorized()
     }
 
     return Promise.reject(toApiError(error))

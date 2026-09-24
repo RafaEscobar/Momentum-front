@@ -11,7 +11,9 @@ const statusMessages: Record<number, string> = {
   401: 'Your session is invalid or has expired.',
   403: 'You do not have permission to perform this action.',
   404: 'The requested resource was not found.',
+  413: 'The request is larger than the server allows.',
   422: 'Some submitted fields are invalid.',
+  429: 'Too many requests. Please try again shortly.',
   500: 'The server could not complete the request.',
 }
 
