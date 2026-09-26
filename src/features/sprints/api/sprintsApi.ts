@@ -2,12 +2,28 @@ import { api } from '@/api/client'
 import type { ApiRequestOptions } from '@/api/client'
 import type { PaginatedResponse } from '@/api/types'
 import type { ApiResourceResponse } from '@/api/types'
-import type { CreateSprintPayload, Sprint, SprintStatus, SprintSummary, UpdateSprintPayload } from '@/features/sprints/types/sprint'
+import type { TaskSummary } from '@/features/tasks/types'
+import type {
+  CompleteSprintPayload,
+  CreateSprintPayload,
+  Sprint,
+  SprintCompletionSummary,
+  SprintStatus,
+  SprintSummary,
+  UpdateSprintPayload,
+} from '@/features/sprints/types/sprint'
 
 export interface SprintFilters {
   page?: number
   status?: SprintStatus
   search?: string
+}
+
+export interface CompleteSprintResponse {
+  sprint: Sprint
+  summary: SprintCompletionSummary
+  moved_tasks: TaskSummary[]
+  completed_tasks?: TaskSummary[]
 }
 
 export async function getSprints(
@@ -52,4 +68,16 @@ export async function deleteSprint(projectId: number, sprintId: number): Promise
 export async function startSprint(projectId: number, sprintId: number): Promise<Sprint> {
   const { data } = await api.post<ApiResourceResponse<Sprint>>(`${sprintEndpoint(projectId, sprintId)}/start`)
   return data.data
+}
+
+export async function completeSprint(
+  projectId: number,
+  sprintId: number,
+  payload: CompleteSprintPayload,
+): Promise<CompleteSprintResponse> {
+  const { data } = await api.post<CompleteSprintResponse>(
+    `${sprintEndpoint(projectId, sprintId)}/complete`,
+    payload,
+  )
+  return data
 }

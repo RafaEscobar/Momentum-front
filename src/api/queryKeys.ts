@@ -2,6 +2,8 @@ import type { ProjectFilters } from '@/features/projects/api/projectsApi'
 import type { BacklogFilters } from '@/features/tasks/api/backlogApi'
 import type { TaskFilters } from '@/features/tasks/api/tasksApi'
 import type { SprintFilters } from '@/features/sprints/api/sprintsApi'
+import type { ActivityFilters } from '@/features/activity/api/activityApi'
+import type { GlobalSearchParams } from '@/features/search/types'
 
 function normalizeProjectFilters(filters: ProjectFilters) {
   return {
@@ -86,4 +88,47 @@ export const boardKeys = {
   all: (projectId: number) => ['projects', projectId, 'board'] as const,
   detail: (projectId: number, sprintId?: number) =>
     [...boardKeys.all(projectId), { sprint_id: sprintId ?? null }] as const,
+}
+
+export const dashboardKeys = {
+  all: ['dashboard'] as const,
+}
+
+function normalizeActivityFilters(filters: ActivityFilters) {
+  return {
+    page: filters.page ?? 1,
+    type: filters.type ?? null,
+    date_from: filters.date_from ?? null,
+    date_to: filters.date_to ?? null,
+  }
+}
+
+export const activityKeys = {
+  all: (projectId: number) => ['projects', projectId, 'activities'] as const,
+  list: (projectId: number, filters: ActivityFilters = {}) =>
+    [...activityKeys.all(projectId), normalizeActivityFilters(filters)] as const,
+}
+
+export const noteKeys = {
+  all: (projectId: number) => ['projects', projectId, 'notes'] as const,
+  lists: (projectId: number) => [...noteKeys.all(projectId), 'list'] as const,
+  list: (projectId: number, page = 1) => [...noteKeys.lists(projectId), { page }] as const,
+  details: (projectId: number) => [...noteKeys.all(projectId), 'detail'] as const,
+  detail: (projectId: number, noteId: number) =>
+    [...noteKeys.details(projectId), noteId] as const,
+}
+
+function normalizeSearchParams(params: GlobalSearchParams) {
+  return {
+    q: params.q.trim(),
+    projects_page: params.projects_page ?? 1,
+    tasks_page: params.tasks_page ?? 1,
+    notes_page: params.notes_page ?? 1,
+  }
+}
+
+export const searchKeys = {
+  all: ['search'] as const,
+  results: (params: GlobalSearchParams) =>
+    [...searchKeys.all, normalizeSearchParams(params)] as const,
 }

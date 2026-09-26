@@ -1,8 +1,10 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Route, Routes } from 'react-router-dom'
 
 import { Component as SprintsPage } from '@/pages/SprintsPage'
+import type { CompleteSprintResponse } from '@/features/sprints/api/sprintsApi'
+import { sprintCompletionMessage } from '@/features/sprints/utils/sprintCompletion'
 import { renderWithProviders } from '@/test/render'
 import { server } from '@/test/server'
 
@@ -73,5 +75,130 @@ describe('Sprints page', () => {
     await user.type(await screen.findByLabelText('Nombre'), 'Sprint duplicado')
     await user.click(screen.getByRole('button', { name: /guardar/i }))
     expect(await screen.findByText('El nombre ya está en uso.')).toBeInTheDocument()
+  })
+
+  it('completes the active Sprint and moves unfinished tasks to Backlog', async () => {
+    const activeSprint = { ...sprint, status: 'active' }
+    let completePayload: unknown
+    server.use(
+      http.get('*/api/projects/7', () => HttpResponse.json({ data: { id: 7, name: 'Momentum', status: 'active', priority: 'high', progress: 0 } })),
+      http.get('*/api/projects/7/sprints', ({ request }) => {
+        const status = new URL(request.url).searchParams.get('status')
+        return HttpResponse.json(page(status === 'active' ? [activeSprint] : []))
+      }),
+      http.get('*/api/projects/7/sprints/3', () => HttpResponse.json({ data: activeSprint })),
+      http.get('*/api/projects/7/board', ({ request }) => {
+        expect(new URL(request.url).searchParams.get('sprint_id')).toBe('3')
+        return HttpResponse.json({
+          sprint: activeSprint,
+          backlog: [],
+          todo: [{ id: 1 }],
+          in_progress: [{ id: 2 }],
+          blocked: [],
+          done: [{ id: 3 }, { id: 4 }],
+        })
+      }),
+      http.post('*/api/projects/7/sprints/3/complete', async ({ request }) => {
+        completePayload = await request.json()
+        return HttpResponse.json({
+          sprint: { ...activeSprint, status: 'completed' },
+          summary: { planned_points: 25, completed_points: 18, completed_tasks: 2, unfinished_tasks: 2 },
+          moved_tasks: [{ id: 1 }, { id: 2 }],
+        })
+      }),
+    )
+
+    const { user } = renderWithProviders(<Routes><Route element={<SprintsPage />} path="/projects/:projectId/sprints" /></Routes>, '/projects/7/sprints')
+
+    await user.click(await screen.findByRole('button', { name: 'Completar Sprint' }))
+    const dialog = screen.getByRole('dialog', { name: 'Completar Sprint' })
+    expect(await within(dialog).findByText('25 pts')).toBeInTheDocument()
+    expect(within(dialog).getByText('18 pts')).toBeInTheDocument()
+    expect(within(dialog).getByText('Tareas completadas').nextElementSibling).toHaveTextContent('2')
+    expect(within(dialog).getByText('Tareas pendientes').nextElementSibling).toHaveTextContent('2')
+    expect(within(dialog).getByRole('radio', { name: /Mover al Backlog/ })).toBeChecked()
+    expect(within(dialog).getByRole('radio', { name: /Mover al siguiente Sprint/ })).toBeDisabled()
+
+    await user.click(within(dialog).getByRole('button', { name: 'Completar Sprint' }))
+    await waitFor(() => expect(completePayload).toEqual({ unfinished_action: 'backlog' }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Completar Sprint' })).not.toBeInTheDocument())
+  })
+
+  it('validates and sends the selected planned Sprint as destination', async () => {
+    const activeSprint = { ...sprint, status: 'active' }
+    const nextSprint = { ...sprint, id: 8, name: 'Sprint 8', status: 'planned', completed_points: 0 }
+    let completePayload: unknown
+    server.use(
+      http.get('*/api/projects/7', () => HttpResponse.json({ data: { id: 7, name: 'Momentum', status: 'active', priority: 'high', progress: 0 } })),
+      http.get('*/api/projects/7/sprints', ({ request }) => {
+        const status = new URL(request.url).searchParams.get('status')
+        return HttpResponse.json(page(status === 'active' ? [activeSprint] : status === 'planned' ? [nextSprint] : []))
+      }),
+      http.get('*/api/projects/7/sprints/:sprintId', ({ params }) => HttpResponse.json({ data: params.sprintId === '8' ? nextSprint : activeSprint })),
+      http.get('*/api/projects/7/board', () => HttpResponse.json({
+        sprint: activeSprint, backlog: [], todo: [{ id: 1 }], in_progress: [], blocked: [], done: [{ id: 2 }],
+      })),
+      http.post('*/api/projects/7/sprints/3/complete', async ({ request }) => {
+        completePayload = await request.json()
+        return HttpResponse.json({
+          sprint: { ...activeSprint, status: 'completed' },
+          summary: { planned_points: 25, completed_points: 18, completed_tasks: 1, unfinished_tasks: 1 },
+          moved_tasks: [{ id: 1 }],
+        })
+      }),
+    )
+
+    const { user } = renderWithProviders(<Routes><Route element={<SprintsPage />} path="/projects/:projectId/sprints" /></Routes>, '/projects/7/sprints')
+    await user.click(await screen.findByRole('button', { name: 'Completar Sprint' }))
+    const dialog = screen.getByRole('dialog', { name: 'Completar Sprint' })
+    const nextOption = await within(dialog).findByRole('radio', { name: /Mover al siguiente Sprint/ })
+    expect(nextOption).toBeEnabled()
+    await user.click(nextOption)
+    await user.click(within(dialog).getByRole('button', { name: 'Completar Sprint' }))
+    expect(await within(dialog).findByText('Selecciona el Sprint de destino.')).toBeInTheDocument()
+    expect(completePayload).toBeUndefined()
+
+    await user.selectOptions(within(dialog).getByLabelText('Sprint destino'), '8')
+    await user.click(within(dialog).getByRole('button', { name: 'Completar Sprint' }))
+    await waitFor(() => expect(completePayload).toEqual({ unfinished_action: 'next_sprint', next_sprint_id: 8 }))
+  })
+
+  it('formats the completion result for the success toast', () => {
+    const result = {
+      sprint: { ...sprint, status: 'completed' },
+      summary: { planned_points: 28, completed_points: 23, completed_tasks: 8, unfinished_tasks: 2 },
+      moved_tasks: [{ id: 1 }, { id: 2 }],
+    } as CompleteSprintResponse
+
+    expect(sprintCompletionMessage(result, 'backlog')).toBe(
+      '23 / 28 puntos completados · 2 tareas movidas al Backlog',
+    )
+  })
+
+  it('renders completed Sprints as a lightweight history', async () => {
+    const completedSprint = {
+      ...sprint,
+      id: 6,
+      name: 'Sprint 6',
+      status: 'completed',
+      planned_points: 28,
+      completed_points: 23,
+      progress_percentage: 82,
+      completed_at: '2026-09-20T18:00:00.000000Z',
+    }
+    server.use(
+      http.get('*/api/projects/7', () => HttpResponse.json({ data: { id: 7, name: 'Momentum', status: 'active', priority: 'high', progress: 0 } })),
+      http.get('*/api/projects/7/sprints', ({ request }) => {
+        const status = new URL(request.url).searchParams.get('status')
+        return HttpResponse.json(page(status === 'completed' ? [completedSprint] : []))
+      }),
+    )
+
+    renderWithProviders(<Routes><Route element={<SprintsPage />} path="/projects/:projectId/sprints" /></Routes>, '/projects/7/sprints')
+
+    expect(await screen.findByRole('heading', { name: 'Sprint 6' })).toBeInTheDocument()
+    expect(screen.getByText('23 / 28 Story Points')).toBeInTheDocument()
+    expect(screen.getByText('82%')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument()
   })
 })

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { PropsWithChildren } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { isApiError } from '@/api/errors'
-import { queryClient } from '@/api/queryClient'
 import { subscribeToUnauthorized } from '@/api/sessionEvents'
 import {
   clearStoredToken,
@@ -16,6 +16,7 @@ import type { AuthContextValue } from '@/features/auth/context/AuthContext'
 import type { LoginRequest, User } from '@/features/auth/types'
 
 export function AuthProvider({ children }: PropsWithChildren) {
+  const queryClient = useQueryClient()
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(() => getStoredToken())
   const [isLoading, setIsLoading] = useState(token !== null)
@@ -25,7 +26,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setUser(null)
     setToken(null)
     queryClient.clear()
-  }, [])
+  }, [queryClient])
 
   useEffect(() => subscribeToUnauthorized(clearSession), [clearSession])
 

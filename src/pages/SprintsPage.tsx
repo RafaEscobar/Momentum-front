@@ -5,6 +5,7 @@ import { Button } from '@/components/common/Button'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Skeleton } from '@/components/common/Skeleton'
 import { useProject } from '@/features/projects/hooks'
+import { CompletedSprintCard } from '@/features/sprints/components/CompletedSprintCard'
 import { SprintCard } from '@/features/sprints/components/SprintCard'
 import { SprintFormModal } from '@/features/sprints/components/SprintFormModal'
 import { useSprints } from '@/features/sprints/hooks'
@@ -14,6 +15,13 @@ function SprintSection({ title, description, projectId, sprints }: { title: stri
   return <section className="border-t border-zinc-200 py-7 first:border-t-0 first:pt-0">
     <div><h2 className="text-lg font-semibold text-zinc-950">{title}</h2><p className="mt-1 text-sm text-zinc-600">{description}</p></div>
     {sprints.length === 0 ? <div className="mt-4 border-l-2 border-zinc-200 py-3 pl-4 text-sm text-zinc-500">No hay Sprints en esta sección.</div> : <div className="mt-5 grid gap-4 xl:grid-cols-2">{sprints.map((sprint) => <SprintCard key={sprint.id} projectId={projectId} sprint={sprint} />)}</div>}
+  </section>
+}
+
+function CompletedSprintsSection({ sprints }: { sprints: SprintSummary[] }) {
+  return <section className="border-t border-zinc-200 py-7">
+    <div><h2 className="text-lg font-semibold text-zinc-950">Sprints completados</h2><p className="mt-1 text-sm text-zinc-600">Historial de iteraciones finalizadas.</p></div>
+    {sprints.length === 0 ? <div className="mt-4 border-l-2 border-zinc-200 py-3 pl-4 text-sm text-zinc-500">No hay Sprints en esta sección.</div> : <div className="mt-5 grid gap-4 xl:grid-cols-2">{sprints.map((sprint) => <CompletedSprintCard key={sprint.id} sprint={sprint} />)}</div>}
   </section>
 }
 
@@ -49,7 +57,7 @@ export function Component() {
     <div className="mt-7">{isPending ? <SprintsSkeleton /> : failedQuery ? <EmptyState action={<Button onClick={() => queries.forEach((query) => void query.refetch())} size="sm" variant="secondary"><RefreshCw size={16} />Reintentar</Button>} description={failedQuery.error.message} icon={<AlertTriangle className="text-red-600" size={30} />} title="No pudimos cargar los Sprints" /> : total === 0 ? <EmptyState description="Los Sprints que planifiques aparecerán aquí." icon={<CalendarRange size={30} />} title="Todavía no hay Sprints" /> : <>
       <SprintSection description="La iteración que se encuentra actualmente en ejecución." projectId={projectId} sprints={activeQuery.data?.data ?? []} title="Sprint activo" />
       <SprintSection description="Iteraciones preparadas para comenzar." projectId={projectId} sprints={plannedQuery.data?.data ?? []} title="Sprints planificados" />
-      <SprintSection description="Historial de iteraciones finalizadas." projectId={projectId} sprints={completedQuery.data?.data ?? []} title="Sprints completados" />
+      <CompletedSprintsSection sprints={completedQuery.data?.data ?? []} />
     </>}</div>
     {showCreate && <SprintFormModal onClose={closeCreate} projectId={projectId} />}
   </section>

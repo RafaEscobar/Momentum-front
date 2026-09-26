@@ -26,7 +26,7 @@ export function Drawer({ title, onClose, children }: DrawerProps) {
   return createPortal(
     <div className="fixed inset-0 z-50">
       <button aria-label="Cerrar panel" className="absolute inset-0 bg-zinc-950/45" onClick={onClose} type="button" />
-      <section aria-labelledby={titleId} aria-modal="true" className="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col bg-white shadow-2xl" role="dialog">
+      <section aria-labelledby={titleId} aria-modal="true" className="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col overflow-hidden bg-white shadow-2xl" role="dialog">
         <header className="flex items-center justify-between gap-4 border-b border-zinc-200 px-5 py-4 sm:px-6">
           <h2 className="text-lg font-semibold text-zinc-950" id={titleId}>{title}</h2>
           <button aria-label="Cerrar" className="grid size-9 place-items-center rounded-md text-zinc-500 hover:bg-zinc-100" onClick={onClose} type="button">

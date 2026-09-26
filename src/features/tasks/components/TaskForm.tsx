@@ -203,9 +203,9 @@ export function TaskForm({ projectId, task, onClose }: TaskFormProps) {
         {errors.root?.server?.message && <div className="flex gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800 sm:col-span-2"><AlertTriangle className="mt-0.5 shrink-0" size={17} />{errors.root.server.message}</div>}
       </div>
 
-      <footer className="flex justify-end gap-3 border-t border-zinc-200 px-5 py-4 sm:px-6">
-        <Button disabled={isSubmitting} onClick={onClose} variant="secondary">Cancelar</Button>
-        <Button disabled={isSubmitting} type="submit">{isSubmitting ? <LoaderCircle className="animate-spin" size={17} /> : <Save size={17} />}Guardar</Button>
+      <footer className="sticky bottom-0 flex gap-3 border-t border-zinc-200 bg-white px-5 py-4 sm:justify-end sm:px-6">
+        <Button className="flex-1 sm:flex-none" disabled={isSubmitting} onClick={onClose} variant="secondary">Cancelar</Button>
+        <Button className="flex-1 sm:flex-none" disabled={isSubmitting} type="submit">{isSubmitting ? <LoaderCircle className="animate-spin" size={17} /> : <Save size={17} />}Guardar</Button>
       </footer>
     </form>
   )

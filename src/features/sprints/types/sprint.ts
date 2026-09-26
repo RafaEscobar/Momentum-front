@@ -28,3 +28,18 @@ export interface CreateSprintPayload {
 }
 
 export type UpdateSprintPayload = Partial<CreateSprintPayload>
+
+export type UnfinishedAction = 'backlog' | 'next_sprint'
+
+export interface CompleteSprintPayload {
+  unfinished_action: UnfinishedAction
+  next_sprint_id?: number
+  include_completed_tasks?: boolean
+}
+
+export interface SprintCompletionSummary {
+  planned_points: number
+  completed_points: number
+  completed_tasks: number
+  unfinished_tasks: number
+}

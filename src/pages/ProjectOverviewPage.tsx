@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  Activity,
   ArrowLeft,
   CalendarDays,
   Gauge,
@@ -9,6 +10,7 @@ import {
   Plus,
   RefreshCw,
   Rocket,
+  StickyNote,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -21,6 +23,7 @@ import { ProgressBar } from '@/components/common/ProgressBar'
 import { Skeleton } from '@/components/common/Skeleton'
 import { ProjectFormModal } from '@/features/projects/components/ProjectFormModal'
 import { useProject, useProjectStats } from '@/features/projects/hooks'
+import { usePrefetchProjectViews } from '@/features/projects/hooks/usePrefetchProjectViews'
 import {
   priorityClasses,
   priorityLabels,
@@ -57,6 +60,7 @@ export function Component() {
   const [isEditing, setIsEditing] = useState(false)
   const projectQuery = useProject(projectId)
   const statsQuery = useProjectStats(projectId)
+  usePrefetchProjectViews(projectId)
 
   if (!Number.isInteger(projectId) || projectId <= 0) {
     return (
@@ -133,7 +137,10 @@ export function Component() {
       <nav aria-label="Accesos rápidos del proyecto" className="mt-6 flex flex-wrap gap-2 border-y border-zinc-200 py-4">
         <Link className="inline-flex h-10 items-center gap-2 rounded-md bg-emerald-800 px-4 text-sm font-semibold text-white hover:bg-emerald-900" to={`/projects/${project.id}/backlog?create=task`}><Plus aria-hidden="true" size={17} />Crear tarea</Link>
         <Link className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 hover:bg-zinc-100" to={`/projects/${project.id}/backlog`}><ListTodo aria-hidden="true" size={17} />Abrir Backlog</Link>
+        <Link className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 hover:bg-zinc-100" to={`/projects/${project.id}/tasks`}><ListTodo aria-hidden="true" size={17} />Ver tareas</Link>
         <Link className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 hover:bg-zinc-100" to={`/projects/${project.id}/board`}><SquareKanban aria-hidden="true" size={17} />Abrir Board</Link>
+        <Link className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 hover:bg-zinc-100" to={`/projects/${project.id}/activity`}><Activity aria-hidden="true" size={17} />Actividad</Link>
+        <Link className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 hover:bg-zinc-100" to={`/projects/${project.id}/notes`}><StickyNote aria-hidden="true" size={17} />Notas</Link>
       </nav>
 
       <div className="mt-7 grid gap-4 lg:grid-cols-3">
@@ -144,10 +151,12 @@ export function Component() {
           </div>
           <p className="mt-5 text-3xl font-semibold text-zinc-950">{stats?.progress ?? project.progress}%</p>
           <div className="mt-3"><ProgressBar value={stats?.progress ?? project.progress} /></div>
-          <div className="mt-5 flex justify-between text-xs text-zinc-500">
-            <span>{stats?.story_points.completed ?? 0} puntos completados</span>
-            <span>{stats?.story_points.total ?? 0} totales</span>
-          </div>
+          <dl className="mt-5 flex items-center justify-between gap-4 text-sm">
+            <dt className="text-zinc-500">Story Points</dt>
+            <dd className="font-semibold text-zinc-900">
+              {stats?.story_points.completed ?? 0} / {stats?.story_points.total ?? 0}
+            </dd>
+          </dl>
         </Card>
 
         <Card className="p-5">

@@ -1,5 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -114,12 +114,20 @@ describe('authentication', () => {
       ),
     )
     const queryClient = createTestQueryClient()
+    queryClient.setQueryData(['private-projects'], [{ id: 7, name: 'Momentum' }])
     const user = userEvent.setup()
 
     render(
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <SessionProbe />
+          <MemoryRouter initialEntries={['/private']}>
+            <Routes>
+              <Route element={<ProtectedRoute />}>
+                <Route element={<SessionProbe />} path="/private" />
+              </Route>
+              <Route element={<h1>Iniciar sesión de nuevo</h1>} path="/login" />
+            </Routes>
+          </MemoryRouter>
         </AuthProvider>
       </QueryClientProvider>,
     )
@@ -127,7 +135,8 @@ describe('authentication', () => {
     expect(await screen.findByText('Sesión activa')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Consultar endpoint' }))
 
-    await waitFor(() => expect(screen.getByText('Sesión cerrada')).toBeInTheDocument())
+    expect(await screen.findByRole('heading', { name: 'Iniciar sesión de nuevo' })).toBeInTheDocument()
     expect(localStorage.getItem('token')).toBeNull()
+    expect(queryClient.getQueryData(['private-projects'])).toBeUndefined()
   })
 })
