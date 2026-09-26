@@ -2,6 +2,7 @@ import { LoaderCircle, LogOut, Menu } from 'lucide-react'
 import { useState } from 'react'
 
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { GlobalSearchBar } from '@/features/search/components/GlobalSearchBar'
 
 interface TopbarProps {
   onOpenSidebar: () => void
@@ -18,7 +19,7 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
   }
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-zinc-200 bg-white px-4 sm:px-6">
+    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-zinc-200 bg-white px-3 sm:px-6">
       <button
         aria-controls="app-sidebar"
         aria-label="Abrir navegación"
@@ -29,14 +30,18 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
         <Menu aria-hidden="true" size={21} />
       </button>
 
-      <div className="ml-auto flex items-center gap-3">
+      <div className="mx-2 flex min-w-0 flex-1 justify-center sm:mx-3 lg:mx-0 lg:justify-start">
+        <GlobalSearchBar />
+      </div>
+
+      <div className="flex shrink-0 items-center gap-3">
         <div className="hidden text-right sm:block">
           <p className="text-sm font-medium text-zinc-900">{user?.name}</p>
           <p className="text-xs text-zinc-500">{user?.email}</p>
         </div>
         <div
           aria-hidden="true"
-          className="grid size-9 place-items-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-900"
+          className="hidden size-9 place-items-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-900 sm:grid"
         >
           {initial}
         </div>

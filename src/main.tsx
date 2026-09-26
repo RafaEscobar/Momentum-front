@@ -5,6 +5,7 @@ import { Toaster } from 'sonner'
 
 import { queryClient } from '@/api/queryClient'
 import App from '@/App'
+import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { AuthProvider } from '@/features/auth/context/AuthProvider'
 
 import './index.css'
@@ -12,10 +13,12 @@ import './index.css'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <App />
-        <Toaster closeButton position="top-right" richColors />
-      </AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <App />
+          <Toaster closeButton position="top-right" richColors />
+        </AuthProvider>
+      </ErrorBoundary>
     </QueryClientProvider>
   </StrictMode>,
 )
