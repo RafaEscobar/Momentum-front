@@ -3,8 +3,10 @@ import {
   ArrowLeft,
   CalendarDays,
   Gauge,
+  SquareKanban,
   ListTodo,
   Pencil,
+  Plus,
   RefreshCw,
   Rocket,
 } from 'lucide-react'
@@ -127,6 +129,12 @@ export function Component() {
           Editar
         </Button>
       </div>
+
+      <nav aria-label="Accesos rápidos del proyecto" className="mt-6 flex flex-wrap gap-2 border-y border-zinc-200 py-4">
+        <Link className="inline-flex h-10 items-center gap-2 rounded-md bg-emerald-800 px-4 text-sm font-semibold text-white hover:bg-emerald-900" to={`/projects/${project.id}/backlog?create=task`}><Plus aria-hidden="true" size={17} />Crear tarea</Link>
+        <Link className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 hover:bg-zinc-100" to={`/projects/${project.id}/backlog`}><ListTodo aria-hidden="true" size={17} />Abrir Backlog</Link>
+        <Link className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 hover:bg-zinc-100" to={`/projects/${project.id}/board`}><SquareKanban aria-hidden="true" size={17} />Abrir Board</Link>
+      </nav>
 
       <div className="mt-7 grid gap-4 lg:grid-cols-3">
         <Card className="p-5">

@@ -18,8 +18,8 @@ export interface PaginationMeta {
   total: number
 }
 
-export interface PaginatedResponse<T> {
+export interface PaginatedResponse<T, TMeta extends PaginationMeta = PaginationMeta> {
   data: T[]
   links: PaginationLinks
-  meta: PaginationMeta
+  meta: TMeta
 }

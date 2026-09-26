@@ -1,4 +1,7 @@
 import type { ProjectFilters } from '@/features/projects/api/projectsApi'
+import type { BacklogFilters } from '@/features/tasks/api/backlogApi'
+import type { TaskFilters } from '@/features/tasks/api/tasksApi'
+import type { SprintFilters } from '@/features/sprints/api/sprintsApi'
 
 function normalizeProjectFilters(filters: ProjectFilters) {
   return {
@@ -17,4 +20,70 @@ export const projectKeys = {
   details: () => [...projectKeys.all, 'detail'] as const,
   detail: (projectId: number) => [...projectKeys.details(), projectId] as const,
   stats: (projectId: number) => [...projectKeys.detail(projectId), 'stats'] as const,
+}
+
+function normalizeTaskFilters(filters: TaskFilters) {
+  return {
+    page: filters.page ?? 1,
+    status: filters.status ?? null,
+    priority: filters.priority ?? null,
+    type: filters.type ?? null,
+    sprint_id: filters.sprint_id ?? null,
+    tag_id: filters.tag_id ?? null,
+    search: filters.search?.trim() || null,
+  }
+}
+
+export const taskKeys = {
+  all: (projectId: number) => ['projects', projectId, 'tasks'] as const,
+  lists: (projectId: number) => [...taskKeys.all(projectId), 'list'] as const,
+  list: (projectId: number, filters: TaskFilters = {}) =>
+    [...taskKeys.lists(projectId), normalizeTaskFilters(filters)] as const,
+  details: (projectId: number) => [...taskKeys.all(projectId), 'detail'] as const,
+  detail: (projectId: number, taskId: number) =>
+    [...taskKeys.details(projectId), taskId] as const,
+}
+
+function normalizeBacklogFilters(filters: BacklogFilters) {
+  return {
+    page: filters.page ?? 1,
+    priority: filters.priority ?? null,
+    type: filters.type ?? null,
+    search: filters.search?.trim() || null,
+    tag_ids: [...(filters.tag_ids ?? [])].sort((a, b) => a - b),
+  }
+}
+
+export const backlogKeys = {
+  all: (projectId: number) => ['projects', projectId, 'backlog'] as const,
+  list: (projectId: number, filters: BacklogFilters = {}) =>
+    [...backlogKeys.all(projectId), normalizeBacklogFilters(filters)] as const,
+}
+
+function normalizeSprintFilters(filters: SprintFilters) {
+  return {
+    page: filters.page ?? 1,
+    status: filters.status ?? null,
+    search: filters.search?.trim() || null,
+  }
+}
+
+export const sprintKeys = {
+  all: (projectId: number) => ['projects', projectId, 'sprints'] as const,
+  lists: (projectId: number) => [...sprintKeys.all(projectId), 'list'] as const,
+  list: (projectId: number, filters: SprintFilters = {}) =>
+    [...sprintKeys.lists(projectId), normalizeSprintFilters(filters)] as const,
+  details: (projectId: number) => [...sprintKeys.all(projectId), 'detail'] as const,
+  detail: (projectId: number, sprintId: number) =>
+    [...sprintKeys.details(projectId), sprintId] as const,
+}
+
+export const tagKeys = {
+  all: ['tags'] as const,
+}
+
+export const boardKeys = {
+  all: (projectId: number) => ['projects', projectId, 'board'] as const,
+  detail: (projectId: number, sprintId?: number) =>
+    [...boardKeys.all(projectId), { sprint_id: sprintId ?? null }] as const,
 }
