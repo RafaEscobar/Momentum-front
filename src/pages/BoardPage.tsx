@@ -1,4 +1,4 @@
-import { DndContext, DragOverlay, PointerSensor, KeyboardSensor, closestCorners, useSensor, useSensors } from '@dnd-kit/core'
+import { DndContext, DragOverlay, PointerSensor, KeyboardSensor, MeasuringStrategy, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { AlertTriangle, ArrowLeft, ClipboardList, RefreshCw } from 'lucide-react'
@@ -14,6 +14,7 @@ import { BoardColumn } from '@/features/board/components/BoardColumn'
 import { TaskCard } from '@/features/board/components/TaskCard'
 import { useBoard } from '@/features/board/hooks/useBoard'
 import { useReorderBoard } from '@/features/board/hooks/useReorderBoard'
+import { boardCollisionDetection } from '@/features/board/utils/boardCollisionDetection'
 import { findBoardTask, moveTask } from '@/features/board/utils/boardState'
 import type { BoardStatus } from '@/features/board/utils/boardState'
 import { useProject } from '@/features/projects/hooks'
@@ -80,9 +81,11 @@ export function Component() {
   }
 
   const handleDragStart = (event: DragStartEvent) => {
-    if (!boardQuery.data) return
+    if (!boardQuery.data || reorderMutation.isPending) return
     setActiveTask(findBoardTask(boardQuery.data, Number(event.active.id))?.task ?? null)
   }
+
+  const handleDragCancel = () => setActiveTask(null)
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveTask(null)
@@ -117,9 +120,9 @@ export function Component() {
     <Link className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-zinc-950" to={`/projects/${projectId}`}><ArrowLeft size={17} />{projectQuery.data?.name ?? 'Proyecto'}</Link>
     <div className="mt-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><div className="flex items-center gap-3"><h1 className="text-2xl font-semibold text-zinc-950">Board</h1>{boardQuery.data?.sprint?.status === 'completed' && <Badge>Solo lectura</Badge>}</div><p className="mt-1 text-sm text-zinc-600">{boardQuery.data?.sprint?.name ?? 'Sprint activo'}</p></div><div className="flex flex-col gap-2 sm:flex-row sm:items-center"><label className="text-sm font-medium text-zinc-700" htmlFor="board-sprint">Sprint</label><Select className="min-w-52" disabled={activeSprintsQuery.isPending || plannedSprintsQuery.isPending || completedSprintsQuery.isPending} id="board-sprint" onChange={(event) => changeSprint(event.target.value)} value={sprintId ?? ''}><option value="">Sprint activo</option>{sprintOptions.map((sprint) => <option key={sprint.id} value={sprint.id}>{sprint.name}{sprint.status === 'completed' ? ' (completado)' : sprint.status === 'planned' ? ' (planificado)' : ' (activo)'}</option>)}</Select>{boardQuery.data && boardQuery.data.backlog.length > 0 && <Link className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-zinc-950" to={`/projects/${projectId}/backlog`}><ClipboardList size={17} />{boardQuery.data.backlog.length} en Backlog</Link>}</div></div>
     {boardQuery.data?.sprint && <div className="mt-5 max-w-md"><StoryPointsSummary completed={boardQuery.data.sprint.completed_points} percentage={boardQuery.data.sprint.progress_percentage} total={boardQuery.data.sprint.planned_points} /></div>}
-    <div className="mt-7">{boardQuery.isPending ? <BoardSkeleton /> : boardQuery.isError ? <EmptyState action={<Button onClick={() => void boardQuery.refetch()} size="sm" variant="secondary"><RefreshCw size={16} />Reintentar</Button>} description={boardQuery.error.message} icon={<AlertTriangle className="text-red-600" size={30} />} title="No pudimos cargar el Board" /> : !boardQuery.data.sprint ? <EmptyState action={<Link className="inline-flex h-9 items-center rounded-md bg-emerald-800 px-3 text-sm font-semibold text-white hover:bg-emerald-900" to={`/projects/${projectId}/sprints`}>Ver Sprints</Link>} description="Inicia un Sprint para comenzar a trabajar con el Board." icon={<ClipboardList size={30} />} title="No hay un Sprint activo" /> : <DndContext collisionDetection={closestCorners} onDragEnd={handleDragEnd} onDragStart={handleDragStart} sensors={sensors}><div className="flex snap-x gap-4 overflow-x-auto overscroll-x-contain pb-4 lg:grid lg:grid-cols-4 lg:overflow-visible">{columns.map((column) => {
+    <div className="mt-7">{boardQuery.isPending ? <BoardSkeleton /> : boardQuery.isError ? <EmptyState action={<Button onClick={() => void boardQuery.refetch()} size="sm" variant="secondary"><RefreshCw size={16} />Reintentar</Button>} description={boardQuery.error.message} icon={<AlertTriangle className="text-red-600" size={30} />} title="No pudimos cargar el Board" /> : !boardQuery.data.sprint ? <EmptyState action={<Link className="inline-flex h-9 items-center rounded-md bg-emerald-800 px-3 text-sm font-semibold text-white hover:bg-emerald-900" to={`/projects/${projectId}/sprints`}>Ver Sprints</Link>} description="Inicia un Sprint para comenzar a trabajar con el Board." icon={<ClipboardList size={30} />} title="No hay un Sprint activo" /> : <DndContext collisionDetection={boardCollisionDetection} measuring={{ droppable: { strategy: MeasuringStrategy.Always } }} onDragCancel={handleDragCancel} onDragEnd={handleDragEnd} onDragStart={handleDragStart} sensors={sensors}><div aria-busy={reorderMutation.isPending} className="flex snap-x gap-4 overflow-x-auto overscroll-x-contain pb-4 lg:grid lg:grid-cols-4 lg:overflow-visible">{columns.map((column) => {
       const tasks = boardQuery.data[column.status]
-      return <BoardColumn count={tasks.length} key={column.status} onStatusChange={changeStatus} onTaskOpen={openTask} readOnly={boardQuery.data.sprint?.status === 'completed'} status={column.status} storyPoints={points(tasks)} tasks={tasks} title={column.title} />
+      return <BoardColumn count={tasks.length} dragDisabled={reorderMutation.isPending} key={column.status} onStatusChange={changeStatus} onTaskOpen={openTask} readOnly={boardQuery.data.sprint?.status === 'completed'} status={column.status} storyPoints={points(tasks)} tasks={tasks} title={column.title} />
     })}</div><DragOverlay>{activeTask ? <TaskCard onOpen={openTask} overlay status={activeTask.status} task={activeTask} /> : null}</DragOverlay></DndContext>}</div>
     {isTaskOpen && <TaskDetailDrawer onClose={closeTask} projectId={projectId} taskId={taskId} />}
   </section>

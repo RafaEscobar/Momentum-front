@@ -40,5 +40,11 @@ export function useReorderBoard() {
       queryClient.setQueryData(boardKeys.detail(projectId, sprintId), previousBoard)
       toast.error('No fue posible mover la tarea. Se restauró el Board.')
     },
+    onSettled: (_, __, { projectId, sprintId }) => {
+      void queryClient.invalidateQueries({
+        queryKey: boardKeys.detail(projectId, sprintId),
+        exact: true,
+      })
+    },
   })
 }

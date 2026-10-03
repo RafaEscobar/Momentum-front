@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { GlobalSearchBar } from '@/features/search/components/GlobalSearchBar'
+import { ThemeToggle } from '@/features/theme/components/ThemeToggle'
 
 interface TopbarProps {
   onOpenSidebar: () => void
@@ -35,6 +36,7 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
       </div>
 
       <div className="flex shrink-0 items-center gap-3">
+        <ThemeToggle />
         <div className="hidden text-right sm:block">
           <p className="text-sm font-medium text-zinc-900">{user?.name}</p>
           <p className="text-xs text-zinc-500">{user?.email}</p>

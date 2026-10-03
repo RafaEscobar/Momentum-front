@@ -1,5 +1,6 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
+import { useState } from 'react'
 import { Route, Routes } from 'react-router-dom'
 
 import { TaskCreateModal } from '@/features/tasks/components/TaskCreateModal'
@@ -8,7 +9,7 @@ import type { CreateTaskPayload, Task, UpdateTaskPayload } from '@/features/task
 import { Component as BoardPage } from '@/pages/BoardPage'
 import { renderWithProviders } from '@/test/render'
 import { server } from '@/test/server'
-import { backlogKeys, projectKeys, taskKeys } from '@/api/queryKeys'
+import { backlogKeys, boardKeys, projectKeys, taskKeys } from '@/api/queryKeys'
 
 const task: Task = {
   id: 10,
@@ -39,6 +40,23 @@ function supportingHandlers() {
     http.get('*/api/tags', () => HttpResponse.json({ data: [{ id: 4, name: 'backend', color: '#22C55E', created_at: '', updated_at: '' }] })),
     http.get('*/api/projects/7/sprints', () => HttpResponse.json(paginatedSprints)),
   ]
+}
+
+function ClosableTaskDrawer({ onClose }: { onClose: () => void }) {
+  const [isOpen, setIsOpen] = useState(true)
+
+  if (!isOpen) return null
+
+  return (
+    <TaskDetailDrawer
+      onClose={() => {
+        setIsOpen(false)
+        onClose()
+      }}
+      projectId={7}
+      taskId={10}
+    />
+  )
 }
 
 describe('task forms', () => {
@@ -160,5 +178,36 @@ describe('task forms', () => {
     expect(queryClient.getQueryData(taskKeys.detail(7, 10))).toMatchObject({ sprint_id: null, status: 'backlog' })
     expect(queryClient.getQueryState(projectKeys.stats(7))?.isInvalidated).toBe(true)
     expect(queryClient.getQueryState(backlogKeys.list(7))?.isInvalidated).toBe(true)
+  })
+
+  it('confirms task deletion, closes the drawer and invalidates related cache', async () => {
+    let deleted = false
+    server.use(
+      ...supportingHandlers(),
+      http.get('*/api/projects/7/tasks/10', () => HttpResponse.json({ data: task })),
+      http.delete('*/api/projects/7/tasks/10', () => {
+        deleted = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const onClose = vi.fn()
+    const { user, queryClient } = renderWithProviders(
+      <ClosableTaskDrawer onClose={onClose} />,
+    )
+    queryClient.setQueryData(backlogKeys.list(7), { data: [task] })
+    queryClient.setQueryData(boardKeys.detail(7), { todo: [task] })
+    queryClient.setQueryData(projectKeys.stats(7), { progress: 10 })
+
+    await user.click(await screen.findByRole('button', { name: 'Eliminar tarea' }))
+    const dialog = screen.getByRole('dialog', { name: 'Eliminar tarea' })
+    expect(within(dialog).getByText(/Documentar API/)).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: 'Eliminar tarea' }))
+
+    await waitFor(() => expect(deleted).toBe(true))
+    expect(onClose).toHaveBeenCalledOnce()
+    expect(queryClient.getQueryData(taskKeys.detail(7, 10))).toBeUndefined()
+    expect(queryClient.getQueryState(backlogKeys.list(7))?.isInvalidated).toBe(true)
+    expect(queryClient.getQueryState(boardKeys.detail(7))?.isInvalidated).toBe(true)
+    expect(queryClient.getQueryState(projectKeys.stats(7))?.isInvalidated).toBe(true)
   })
 })

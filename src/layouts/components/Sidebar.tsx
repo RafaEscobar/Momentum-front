@@ -1,4 +1,4 @@
-import { CircleGauge, FolderKanban, LayoutDashboard, X } from 'lucide-react'
+import { CircleGauge, FileText, FolderKanban, LayoutDashboard, X } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 interface SidebarProps {
@@ -9,6 +9,7 @@ interface SidebarProps {
 const navigation = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/projects', label: 'Proyectos', icon: FolderKanban, end: false },
+  { to: '/notes', label: 'Notas generales', icon: FileText, end: true },
 ]
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {

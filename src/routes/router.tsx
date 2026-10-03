@@ -17,6 +17,7 @@ export const router = createBrowserRouter(
           children: [
             { index: true, element: <Navigate to="/dashboard" replace /> },
             { path: 'dashboard', lazy: () => import('@/pages/DashboardPage') },
+            { path: 'notes', lazy: () => import('@/pages/GeneralNotesPage') },
             { path: 'projects', lazy: () => import('@/pages/ProjectsPage') },
             { path: 'projects/:projectId', lazy: () => import('@/pages/ProjectOverviewPage') },
             { path: 'projects/:projectId/backlog', lazy: () => import('@/pages/BacklogPage') },
