@@ -4,6 +4,7 @@ import type { TaskFilters } from '@/features/tasks/api/tasksApi'
 import type { SprintFilters } from '@/features/sprints/api/sprintsApi'
 import type { ActivityFilters } from '@/features/activity/api/activityApi'
 import type { GlobalSearchParams } from '@/features/search/types'
+import type { GeneralNoteFilters } from '@/features/general-notes/api/generalNotesApi'
 
 function normalizeProjectFilters(filters: ProjectFilters) {
   return {
@@ -116,6 +117,22 @@ export const noteKeys = {
   details: (projectId: number) => [...noteKeys.all(projectId), 'detail'] as const,
   detail: (projectId: number, noteId: number) =>
     [...noteKeys.details(projectId), noteId] as const,
+}
+
+function normalizeGeneralNoteFilters(filters: GeneralNoteFilters) {
+  return {
+    page: filters.page ?? 1,
+    search: filters.search?.trim() || null,
+  }
+}
+
+export const generalNoteKeys = {
+  all: ['general-notes'] as const,
+  lists: () => [...generalNoteKeys.all, 'list'] as const,
+  list: (filters: GeneralNoteFilters = {}) =>
+    [...generalNoteKeys.lists(), normalizeGeneralNoteFilters(filters)] as const,
+  details: () => [...generalNoteKeys.all, 'detail'] as const,
+  detail: (noteId: number) => [...generalNoteKeys.details(), noteId] as const,
 }
 
 function normalizeSearchParams(params: GlobalSearchParams) {

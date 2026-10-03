@@ -7,6 +7,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { isApiError } from '@/api/errors'
 import { FullPageLoader } from '@/components/common/FullPageLoader'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { ThemeToggle } from '@/features/theme/components/ThemeToggle'
 import { loginSchema } from '@/features/auth/schemas/loginSchema'
 import type { LoginFormValues } from '@/features/auth/schemas/loginSchema'
 
@@ -69,7 +70,10 @@ export function Component() {
   })
 
   return (
-    <main className="grid min-h-screen bg-zinc-50 lg:grid-cols-[minmax(320px,0.8fr)_minmax(520px,1.2fr)]">
+    <main className="relative grid min-h-screen bg-zinc-50 lg:grid-cols-[minmax(320px,0.8fr)_minmax(520px,1.2fr)]">
+      <div className="absolute right-5 top-5 z-10">
+        <ThemeToggle />
+      </div>
       <section className="hidden bg-emerald-950 p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <div className="flex items-center gap-3">
           <div className="grid size-10 place-items-center rounded-md bg-emerald-400 text-emerald-950">

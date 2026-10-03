@@ -19,4 +19,24 @@ describe('Board movement', () => {
     expect(result?.board.todo).toMatchObject([{ id: 2, status: 'todo', position: 0 }])
     expect(result?.board.in_progress).toMatchObject([{ id: 1, status: 'in_progress', position: 0 }, { id: 3, status: 'in_progress', position: 1 }])
   })
+
+  it('moves a task into an empty column when dropping on its background', () => {
+    const result = moveTask(board, 1, 'blocked', 'column-blocked')
+
+    expect(result?.board.todo.map(({ id, position }) => ({ id, position }))).toEqual([
+      { id: 2, position: 0 },
+    ])
+    expect(result?.board.blocked).toMatchObject([
+      { id: 1, status: 'blocked', position: 0 },
+    ])
+  })
+
+  it('moves a task to the end when dropping on its current column background', () => {
+    const result = moveTask(board, 1, 'todo', 'column-todo')
+
+    expect(result?.board.todo.map(({ id, position }) => ({ id, position }))).toEqual([
+      { id: 2, position: 0 },
+      { id: 1, position: 1 },
+    ])
+  })
 })
